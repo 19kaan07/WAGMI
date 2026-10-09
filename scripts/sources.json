@@ -1,0 +1,18 @@
+[
+  { "id": "coindesk", "name": "CoinDesk", "channel": "world", "url": "https://www.coindesk.com/arc/outboundfeeds/rss", "cat": "k" },
+  { "id": "cointelegraph", "name": "Cointelegraph", "channel": "world", "url": "https://cointelegraph.com/rss", "cat": "k" },
+  { "id": "theblock", "name": "The Block", "channel": "world", "url": "https://www.theblock.co/rss.xml", "cat": "k" },
+  { "id": "decrypt", "name": "Decrypt", "channel": "world", "url": "https://decrypt.co/feed", "cat": "k" },
+  { "id": "bitcoinmagazine", "name": "Bitcoin Magazine", "channel": "world", "url": "https://bitcoinmagazine.com/.rss/full/", "cat": "k" },
+  { "id": "finextra", "name": "Finextra", "channel": "world", "url": "https://www.finextra.com/rss/headlines.aspx", "cat": "f" },
+  { "id": "fintechfutures", "name": "FinTech Futures", "channel": "world", "url": "https://www.fintechfutures.com/feed/", "cat": "f" },
+  { "id": "fintechtimes", "name": "The Fintech Times", "channel": "world", "url": "https://thefintechtimes.com/feed/", "cat": "f" },
+
+  { "id": "cointelegraph-tr", "name": "Cointelegraph TR", "channel": "tr", "group": "kriptomeda", "url": "https://tr.cointelegraph.com/rss", "cat": "k" },
+  { "id": "coinkolik", "name": "Coinkolik", "channel": "tr", "group": "kriptomeda", "url": "https://coinkolik.com/feed/", "cat": "k" },
+  { "id": "btchaber", "name": "BTCHaber", "channel": "tr", "group": "kriptomeda", "url": "https://btchaber.com/feed/", "cat": "k" },
+  { "id": "cointurk", "name": "CoinTürk", "channel": "tr", "url": "https://www.cointurk.com/feed", "cat": "k" },
+  { "id": "coindesk-tr", "name": "CoinDesk TR", "channel": "tr", "url": "https://www.coindesk.com/tr/arc/outboundfeeds/rss", "cat": "k" },
+  { "id": "bitcoinsistemi", "name": "Bitcoin Sistemi", "channel": "tr", "url": "https://bitcoinsistemi.com/feed/", "cat": "k" },
+  { "id": "bloomberght", "name": "BloombergHT", "channel": "tr", "url": "https://www.bloomberght.com/rss", "filter": true }
+]
