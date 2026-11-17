@@ -7,7 +7,8 @@ import { readFile, writeFile } from 'node:fs/promises'
 
 const mode = process.argv[2] ?? 'breaking'
 const TOKEN = process.env.TELEGRAM_BOT_TOKEN
-const CHAT = process.env.TELEGRAM_CHAT_ID
+// TELEGRAM_CHAT_ID tek numara ya da virgülle ayrılmış birkaç numara olabilir: 123456789,987654321
+const CHATS = (process.env.TELEGRAM_CHAT_ID ?? '').split(',').map(x => x.trim()).filter(Boolean)
 const DRY = process.env.DRY_RUN === '1'
 const STATE = new URL('../notify-state.json', import.meta.url)
 const NEWS = new URL('../public/news.json', import.meta.url)
@@ -23,23 +24,35 @@ const hourTR = d => Number(new Intl.DateTimeFormat('en-GB', { timeZone: TZ, hour
 const dayTR = d => new Date(d).toLocaleDateString('sv-SE', { timeZone: TZ })
 const byImportance = (a, b) => b.n - a.n || b.t.localeCompare(a.t)
 
-async function send(text) {
-  if (DRY) { console.log('--- (deneme, gönderilmedi)\n' + text + '\n'); return }
+async function sendTo(chat, text) {
   const r = await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ chat_id: CHAT, text, parse_mode: 'HTML', disable_web_page_preview: true }),
+    body: JSON.stringify({ chat_id: chat, text, parse_mode: 'HTML', disable_web_page_preview: true }),
     signal: AbortSignal.timeout(20000)
   })
   const j = await r.json().catch(() => ({}))
-  if (!r.ok || !j.ok) throw new Error(`Telegram hatası: ${j.description ?? r.status}`)
+  if (!r.ok || !j.ok) throw new Error(j.description ?? `HTTP ${r.status}`)
+}
+
+// Herkese gönderir. Biri başarısız olursa (örneğin botu henüz başlatmamışsa) diğerlerine devam eder.
+// En az bir kişiye gittiyse başarılı sayılır; kimseye gitmediyse hata verir.
+async function send(text) {
+  if (DRY) { console.log('--- (deneme, gönderilmedi)\n' + text + '\n'); return }
+  let ok = 0
+  const errors = []
+  for (const [i, chat] of CHATS.entries()) {
+    try { await sendTo(chat, text); ok++ } catch (e) { errors.push(`${i + 1}. numara: ${e.message}`) }
+  }
+  if (errors.length) console.log(`::warning::Bazı alıcılara gönderilemedi: ${errors.join(' | ')}`)
+  if (!ok) throw new Error('Telegram hatası: hiçbir alıcıya gönderilemedi')
 }
 
 async function readJson(url, fallback) {
   try { return JSON.parse(await readFile(url, 'utf8')) } catch { return fallback }
 }
 
-if (!DRY && (!TOKEN || !CHAT)) {
+if (!DRY && (!TOKEN || !CHATS.length)) {
   if (mode === 'test') { console.error('TELEGRAM_BOT_TOKEN ve TELEGRAM_CHAT_ID gizli ayarları eklenmemiş.'); process.exit(1) }
   console.log('Telegram ayarı yok, bildirim atlandı.')
   process.exit(0)
