@@ -1,0 +1,53 @@
+# Telegram bildirimleri: gün içinde olay yaratan haber (30 dakikada bir bakar) ve her sabah 09:00 (Türkiye) özeti.
+# Gizli ayarlar: TELEGRAM_BOT_TOKEN ve TELEGRAM_CHAT_ID (Settings → Secrets and variables → Actions)
+name: Telegram bildirimi
+
+on:
+  schedule:
+    - cron: '10,40 * * * *'   # gün içi haber kontrolü
+    - cron: '0 6 * * *'       # 06:00 UTC = 09:00 Türkiye saati, sabah özeti
+  workflow_dispatch:
+    inputs:
+      mod:
+        description: 'test = deneme mesajı, morning = sabah özeti, breaking = gün içi kontrol'
+        type: choice
+        options: [test, morning, breaking]
+        default: test
+
+permissions:
+  contents: read
+
+concurrency:
+  group: bildirim
+  cancel-in-progress: false
+
+jobs:
+  bildir:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Hangi bildirim?
+        id: mod
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then echo "mod=${{ inputs.mod }}" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event.schedule }}" = "0 6 * * *" ]; then echo "mod=morning" >> "$GITHUB_OUTPUT"
+          else echo "mod=breaking" >> "$GITHUB_OUTPUT"; fi
+      - name: Haberleri çek
+        if: steps.mod.outputs.mod != 'test'
+        run: npm run news
+      # Hangi haberin gönderildiğini hatırlamak için küçük bir kayıt dosyası (veritabanı gerekmez).
+      - uses: actions/cache@v4
+        with:
+          path: notify-state.json
+          key: bildirim-${{ github.run_id }}
+          restore-keys: bildirim-
+      - name: Telegram'a gönder
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: node scripts/notify.mjs ${{ steps.mod.outputs.mod }}
