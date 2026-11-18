@@ -1,6 +1,7 @@
-// Telegram bildirimleri. Kullanım: node scripts/notify.mjs [breaking|morning|test]
+// Telegram bildirimleri. Kullanım: node scripts/notify.mjs [breaking|morning|morning-test|test]
 //   breaking: son saatlerde en az 3 kaynağın yazdığı yeni haberi gönderir (günde en fazla 3, gece sessiz)
-//   morning : her kanaldan son 24 saatin en çok yazılan 5 haberini tek mesajda gönderir
+//   morning : her kanaldan son 24 saatin en çok yazılan 5 haberini tek mesajda gönderir (günde en fazla bir kez)
+//   morning-test: aynısı, ama günde bir kez sınırı olmadan (elle deneme için)
 //   test    : bağlantıyı denemek için kısa bir mesaj gönderir
 // Gizli ayarlar (GitHub Actions): TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID. DRY_RUN=1 ise mesajları göndermez, yazdırır.
 import { readFile, writeFile } from 'node:fs/promises'
@@ -67,8 +68,11 @@ if (mode === 'test') {
 const news = await readJson(NEWS, null)
 if (!news?.updated) { console.log('news.json boş, bildirim atlandı.'); process.exit(0) }
 const now = Date.now()
+const state = await readJson(STATE, { sent: {} })
 
-if (mode === 'morning') {
+if (mode === 'morning' || mode === 'morning-test') {
+  // Hem Cloudflare hem GitHub zamanlayıcısı tetikleyebileceği için sabah özeti günde bir kez gider.
+  if (mode === 'morning' && state.morningDay === dayTR(now)) { console.log('Bugünün sabah özeti zaten gönderilmiş, atlandı.'); process.exit(0) }
   const blocks = []
   for (const [key, title] of [['tr', 'Türkiye'], ['world', 'Dünya']]) {
     const top = (news[key] ?? []).filter(n => now - new Date(n.t) <= 24 * 3600e3).sort(byImportance).slice(0, 5)
@@ -81,6 +85,7 @@ if (mode === 'morning') {
   }
   if (!blocks.length) { console.log('Son 24 saatte haber yok, sabah özeti atlandı.'); process.exit(0) }
   await send('☀️ <b>Günaydın, WAGMI sabah özeti</b>\n\n' + blocks.join('\n\n'))
+  if (mode === 'morning') { state.morningDay = dayTR(now); await writeFile(STATE, JSON.stringify(state)) }
   console.log('Sabah özeti gönderildi.')
   process.exit(0)
 }
@@ -89,7 +94,6 @@ if (mode === 'morning') {
 const h = hourTR(new Date())
 if (h >= 23 || h < 8) { console.log('Gece sessiz saati, bildirim atlandı.'); process.exit(0) }
 
-const state = await readJson(STATE, { sent: {} })
 for (const [id, t] of Object.entries(state.sent)) if (now - new Date(t) > 3 * 86400e3) delete state.sent[id]
 const today = dayTR(now)
 let left = MAX_PER_DAY - Object.values(state.sent).filter(t => dayTR(t) === today).length

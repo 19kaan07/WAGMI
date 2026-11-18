@@ -1,4 +1,6 @@
 # Telegram bildirimleri: gün içinde olay yaratan haber (30 dakikada bir bakar) ve her sabah 09:00 (Türkiye) özeti.
+# GitHub'ın kendi zamanlayıcısı güvenilir değil (çalışmaları atlıyor/geciktiriyor). Asıl tetikleyici Cloudflare Worker'dır
+# (worker/tetikleyici.js); aşağıdaki 'schedule' satırları yedek olarak kalır. Sabah özeti günde bir kez gider.
 # Gizli ayarlar: TELEGRAM_BOT_TOKEN ve TELEGRAM_CHAT_ID (Settings → Secrets and variables → Actions)
 name: Telegram bildirimi
 
@@ -9,9 +11,9 @@ on:
   workflow_dispatch:
     inputs:
       mod:
-        description: 'test = deneme mesajı, morning = sabah özeti, breaking = gün içi kontrol'
+        description: 'test = deneme mesajı, morning-test = sabah özetini şimdi gönder, morning = sabah özeti (günde bir kez), breaking = gün içi kontrol'
         type: choice
-        options: [test, morning, breaking]
+        options: [test, morning-test, morning, breaking]
         default: test
 
 permissions:
