@@ -35,7 +35,13 @@ async function run(cron, env) {
 
 export default {
   async scheduled(event, env, ctx) {
-    ctx.waitUntil(run(event.cron, env));
+    // Hata olursa metni günlüğe yaz (Cloudflare → Observability → Logs), yoksa sadece "exception" görünür.
+    ctx.waitUntil(
+      run(event.cron, env).then(
+        () => console.log(`OK ${event.cron}`),
+        (e) => { console.error(`HATA ${event.cron}: ${e.message}`); throw e; }
+      )
+    );
   },
   // Tarayıcıdan adresi açınca çalıştığını görmek için (hiçbir şey tetiklemez)
   async fetch() {
